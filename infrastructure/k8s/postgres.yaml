@@ -1,0 +1,132 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: comp-intel
+  labels:
+    app: postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15-alpine
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          value: "bullion_intel"
+        - name: POSTGRES_USER
+          value: "postgres"
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: POSTGRES_PASSWORD
+        - name: POSTGRES_INITDB_ARGS
+          value: "--auth-host=scram-sha-256"
+        volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
+        - name: init-script
+          mountPath: /docker-entrypoint-initdb.d
+        resources:
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+        livenessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - postgres
+            - -d
+            - bullion_intel
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - postgres
+            - -d
+            - bullion_intel
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 5
+      volumes:
+      - name: postgres-data
+        persistentVolumeClaim:
+          claimName: postgres-pvc
+      - name: init-script
+        configMap:
+          name: postgres-init
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: comp-intel
+  labels:
+    app: postgres
+spec:
+  ports:
+  - port: 5432
+    targetPort: 5432
+  selector:
+    app: postgres
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init
+  namespace: comp-intel
+data:
+  init.sql: |
+    -- Database initialization script
+    CREATE TABLE IF NOT EXISTS competitors (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100) UNIQUE NOT NULL,
+        display_name VARCHAR(200) NOT NULL,
+        base_url VARCHAR(500),
+        scraper_type VARCHAR(50),
+        is_active BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS rate_records (
+        id SERIAL PRIMARY KEY,
+        competitor_id INTEGER REFERENCES competitors(id),
+        competitor_name VARCHAR(100) NOT NULL,
+        product_type VARCHAR(50) NOT NULL,
+        buy_rate DECIMAL(10,2),
+        sell_rate DECIMAL(10,2),
+        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        raw_data JSONB,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_rate_records_competitor_timestamp ON rate_records(competitor_name, timestamp DESC);
+    CREATE INDEX IF NOT EXISTS idx_rate_records_timestamp ON rate_records(timestamp DESC);
+    CREATE INDEX IF NOT EXISTS idx_rate_records_product_type ON rate_records(product_type);
+
+    -- Insert default competitors
+    INSERT INTO competitors (name, display_name, scraper_type, is_active) 
+    VALUES 
+        ('kjbullion', 'KJ Bullion', 'API', true),
+        ('csvbullion', 'CSV Bullion', 'WebSocket', true),
+        ('rsbl', 'RSBL', 'Firebase', true)
+    ON CONFLICT (name) DO NOTHING;

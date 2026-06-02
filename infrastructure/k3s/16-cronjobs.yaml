@@ -1,0 +1,43 @@
+# Dealer metadata scrape — weekly Sunday 3am IST
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: dealer-metadata
+  namespace: comp-intel
+spec:
+  schedule: "30 21 * * 6"  # 21:30 UTC Saturday = 03:00 IST Sunday
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 600
+      template:
+        spec:
+          nodeSelector:
+            node-role: app
+          restartPolicy: OnFailure
+          containers:
+          - name: dealer-metadata
+            image: REGISTRY_PLACEHOLDER/backend:IMAGE_TAG
+            command: ["python", "scripts/scrape_dealer_metadata.py", "--store", "--no-print"]
+            env:
+            - name: REDIS_URL
+              value: "redis://redis:6379"
+            - name: DATABASE_URL
+              value: "postgresql://postgres:$(POSTGRES_PASSWORD)@pgbouncer:6432/bullion_intel"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: POSTGRES_PASSWORD
+            - name: ENVIRONMENT
+              value: "production"
+            resources:
+              requests:
+                memory: "128Mi"
+                cpu: "50m"
+              limits:
+                memory: "256Mi"
+                cpu: "200m"

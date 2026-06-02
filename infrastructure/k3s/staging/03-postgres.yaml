@@ -1,0 +1,173 @@
+# Staging PostgreSQL — Deployment with emptyDir (disposable data, no PVC cost)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: comp-intel-staging
+  labels:
+    app: postgres
+    environment: staging
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: postgres
+      environment: staging
+  template:
+    metadata:
+      labels:
+        app: postgres
+        environment: staging
+    spec:
+      nodeSelector:
+        node-role: app
+      containers:
+      - name: postgres
+        image: postgres:15-alpine
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          value: bullion_intel_staging
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: POSTGRES_PASSWORD
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 250m
+            memory: 256Mi
+        volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
+        - name: init-scripts
+          mountPath: /docker-entrypoint-initdb.d
+        readinessProbe:
+          exec:
+            command: ["pg_isready", "-U", "postgres"]
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          exec:
+            command: ["pg_isready", "-U", "postgres"]
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: postgres-data
+        emptyDir: {}
+      - name: init-scripts
+        configMap:
+          name: postgres-init
+---
+# Reuse production init SQL for staging
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init
+  namespace: comp-intel-staging
+data:
+  init.sql: |
+    CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+    CREATE TABLE IF NOT EXISTS competitors (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        name VARCHAR(100) NOT NULL UNIQUE,
+        base_url VARCHAR(500) NOT NULL,
+        scraper_type VARCHAR(50) NOT NULL,
+        is_active BOOLEAN DEFAULT true,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS scripts (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        competitor_id UUID NOT NULL REFERENCES competitors(id) ON DELETE CASCADE,
+        name VARCHAR(200) NOT NULL,
+        symbol VARCHAR(100) NOT NULL,
+        category VARCHAR(50) DEFAULT 'gold',
+        is_active BOOLEAN DEFAULT true,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        UNIQUE(competitor_id, symbol)
+    );
+
+    CREATE TABLE IF NOT EXISTS rates (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        script_id UUID NOT NULL REFERENCES scripts(id) ON DELETE CASCADE,
+        timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
+        buy_rate DECIMAL(10,2),
+        sell_rate DECIMAL(10,2),
+        high_rate DECIMAL(10,2),
+        low_rate DECIMAL(10,2),
+        volume BIGINT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS users (
+        id VARCHAR PRIMARY KEY,
+        username VARCHAR(50) NOT NULL UNIQUE,
+        password_hash VARCHAR(255) NOT NULL,
+        email VARCHAR(255),
+        is_active BOOLEAN DEFAULT true,
+        is_admin BOOLEAN DEFAULT false,
+        last_login TIMESTAMP,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS user_dashboards (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        user_id VARCHAR NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        name VARCHAR(100) NOT NULL,
+        config JSONB NOT NULL,
+        is_default BOOLEAN DEFAULT false,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_rates_script_timestamp ON rates(script_id, timestamp DESC);
+    CREATE INDEX IF NOT EXISTS idx_rates_timestamp ON rates(timestamp DESC);
+    CREATE INDEX IF NOT EXISTS idx_scripts_competitor ON scripts(competitor_id);
+    CREATE INDEX IF NOT EXISTS idx_user_dashboards_user ON user_dashboards(user_id);
+
+    CREATE OR REPLACE FUNCTION update_updated_at_column()
+    RETURNS TRIGGER AS $$
+    BEGIN
+        NEW.updated_at = NOW();
+        RETURN NEW;
+    END;
+    $$ language 'plpgsql';
+
+    DO $$ BEGIN
+      CREATE TRIGGER update_competitors_updated_at BEFORE UPDATE ON competitors FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+    EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    DO $$ BEGIN
+      CREATE TRIGGER update_scripts_updated_at BEFORE UPDATE ON scripts FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+    EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    DO $$ BEGIN
+      CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+    EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    DO $$ BEGIN
+      CREATE TRIGGER update_user_dashboards_updated_at BEFORE UPDATE ON user_dashboards FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+    EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: comp-intel-staging
+spec:
+  selector:
+    app: postgres
+    environment: staging
+  ports:
+  - port: 5432
+    targetPort: 5432

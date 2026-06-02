@@ -1,0 +1,356 @@
+/* 
+ * Glassmorphism Stock Ticker Dashboard - Design System V1
+ * Professional glassmorphism effects for financial data visualization
+ */
+
+/* ========================================
+   ROOT VARIABLES & DESIGN TOKENS
+   ======================================== */
+:root {
+  /* Glassmorphism Colors */
+  --glass-bg-primary: rgba(255, 255, 255, 0.05);
+  --glass-bg-secondary: rgba(255, 255, 255, 0.08);
+  --glass-bg-hover: rgba(255, 255, 255, 0.12);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-border-hover: rgba(255, 255, 255, 0.2);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  --glass-shadow-hover: 0 12px 48px rgba(0, 0, 0, 0.15);
+  
+  /* Financial Colors */
+  --color-positive: #22c55e;
+  --color-negative: #ef4444;
+  --color-neutral: #6b7280;
+  --color-accent: #6366f1;
+  
+  /* Glassmorphism Gradients */
+  --gradient-bg: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.1), 
+    rgba(255, 255, 255, 0.05));
+  --gradient-bg-hover: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.15), 
+    rgba(255, 255, 255, 0.08));
+  --gradient-active: linear-gradient(135deg,
+    rgba(99, 102, 241, 0.2),
+    rgba(139, 92, 246, 0.15));
+}
+
+/* ========================================
+   BASE GLASSMORPHISM COMPONENTS
+   ======================================== */
+.glass-base {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 16px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-card {
+  background: var(--glass-bg-primary);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+.glass-card:hover {
+  background: var(--glass-bg-secondary);
+  border-color: var(--glass-border-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--glass-shadow-hover);
+}
+
+/* ========================================
+   TICKER COMPONENTS
+   ======================================== */
+.glass-ticker-card {
+  background: var(--gradient-bg);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border: 1px solid var(--glass-border-hover);
+  border-radius: 12px;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.glass-ticker-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent);
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+.glass-ticker-card:hover {
+  background: var(--gradient-bg-hover);
+  transform: translateY(-3px);
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+/* ========================================
+   INTERACTIVE ELEMENTS
+   ======================================== */
+.glass-button {
+  background: var(--gradient-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border-hover);
+  color: white;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-weight: 500;
+}
+
+.glass-button:hover {
+  background: var(--gradient-bg-hover);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.glass-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.glass-input {
+  background: var(--glass-bg-primary);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border);
+  color: white;
+  border-radius: 8px;
+  padding: 8px 12px;
+  transition: all 0.3s ease;
+}
+
+.glass-input:focus {
+  background: var(--glass-bg-secondary);
+  border-color: rgba(99, 102, 241, 0.5);
+  box-shadow: 
+    0 0 0 3px rgba(99, 102, 241, 0.1),
+    0 4px 20px rgba(0, 0, 0, 0.1);
+  outline: none;
+}
+
+.glass-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* ========================================
+   TAB SYSTEM
+   ======================================== */
+.glass-tab {
+  background: var(--glass-bg-primary);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--glass-border);
+  transition: all 0.3s ease;
+  border-radius: 8px;
+  padding: 8px 16px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.glass-tab:hover {
+  background: var(--glass-bg-secondary);
+  border-color: var(--glass-border-hover);
+  color: white;
+}
+
+.glass-tab-active {
+  background: var(--gradient-active);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  color: white;
+  box-shadow: 
+    0 4px 20px rgba(99, 102, 241, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+/* ========================================
+   TABLE ENHANCEMENTS
+   ======================================== */
+.glass-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+}
+
+.glass-table th {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glass-table tbody tr {
+  transition: all 0.2s ease;
+}
+
+.glass-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+.glass-table td {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 12px 16px;
+}
+
+/* ========================================
+   FINANCIAL DATA STYLING
+   ======================================== */
+.price-positive {
+  color: var(--color-positive);
+}
+
+.price-negative {
+  color: var(--color-negative);
+}
+
+.price-neutral {
+  color: var(--color-neutral);
+}
+
+/* Price change flash animations */
+@keyframes price-flash-positive {
+  0%, 100% { background-color: transparent; }
+  50% { background-color: rgba(34, 197, 94, 0.2); }
+}
+
+@keyframes price-flash-negative {
+  0%, 100% { background-color: transparent; }
+  50% { background-color: rgba(239, 68, 68, 0.2); }
+}
+
+.price-flash-positive {
+  animation: price-flash-positive 0.8s ease-in-out;
+}
+
+.price-flash-negative {
+  animation: price-flash-negative 0.8s ease-in-out;
+}
+
+/* ========================================
+   ANIMATIONS
+   ======================================== */
+@keyframes shimmer {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes pulse-glass {
+  0%, 100% { background: var(--glass-bg-primary); }
+  50% { background: var(--glass-bg-secondary); }
+}
+
+.glass-loading {
+  animation: pulse-glass 2s ease-in-out infinite;
+}
+
+.glass-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
+@media (max-width: 768px) {
+  .glass-card {
+    border-radius: 12px;
+    margin: 0 4px;
+  }
+  
+  .glass-ticker-card {
+    border-radius: 8px;
+  }
+  
+  .glass-button {
+    padding: 6px 12px;
+    font-size: 14px;
+  }
+}
+
+/* ========================================
+   SCROLLBAR STYLING
+   ======================================== */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* ========================================
+   UTILITY CLASSES
+   ======================================== */
+.glass-enhanced {
+  background: 
+    linear-gradient(135deg, rgba(255, 255, 255, 0.1), transparent),
+    linear-gradient(135deg, transparent, rgba(255, 255, 255, 0.05));
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid;
+  border-image: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.2), 
+    rgba(255, 255, 255, 0.05)) 1;
+}
+
+.glass-button-small {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--glass-border-hover);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  font-size: 12px;
+}
+
+.glass-button-small:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: scale(1.05);
+}
+
+.glass-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}

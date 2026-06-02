@@ -1,0 +1,389 @@
+# =============================================================================
+# Prometheus + Grafana on data node (~350MB RAM total)
+# =============================================================================
+
+# --- Prometheus ConfigMap ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: comp-intel
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+
+    rule_files:
+      - /etc/prometheus/alerts.yml
+
+    scrape_configs:
+      # Backend API (FastAPI instrumentator + custom metrics)
+      - job_name: backend
+        metrics_path: /metrics
+        kubernetes_sd_configs:
+          - role: endpoints
+            namespaces:
+              names: [comp-intel]
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_service_name]
+            regex: backend
+            action: keep
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+
+      # Scraper Worker (custom prometheus_client on :9090)
+      - job_name: scraper-worker
+        metrics_path: /metrics
+        kubernetes_sd_configs:
+          - role: endpoints
+            namespaces:
+              names: [comp-intel]
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_service_name]
+            regex: scraper-worker
+            action: keep
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+
+      # News Worker (prometheus_client on :9091)
+      - job_name: news-worker
+        metrics_path: /metrics
+        kubernetes_sd_configs:
+          - role: endpoints
+            namespaces:
+              names: [comp-intel]
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_service_name]
+            regex: news-worker
+            action: keep
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+
+      # Prometheus self-monitoring
+      - job_name: prometheus
+        static_configs:
+          - targets: ['localhost:9090']
+
+  alerts.yml: |
+    groups:
+      - name: scraper_alerts
+        rules:
+          # Fires when any scraper hasn't sent an update in 2 minutes
+          - alert: ScraperStale
+            expr: scraper_freshness_seconds > 120
+            for: 1m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Scraper {{ $labels.scraper }} is stale"
+              description: "No rate update for {{ $value | humanizeDuration }}"
+
+          # Fires when a scraper is marked unhealthy
+          - alert: ScraperUnhealthy
+            expr: scraper_healthy == 0
+            for: 2m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Scraper {{ $labels.scraper }} is unhealthy"
+              description: "Scraper has been unhealthy for >2 minutes"
+
+          # Fires when a scraper has restarted 3+ times in an hour
+          - alert: ScraperRestartLoop
+            expr: scraper_restarts_last_hour >= 3
+            for: 0m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Scraper {{ $labels.scraper }} restart loop"
+              description: "{{ $value }} restarts in the last hour"
+
+          # Fires when no rate updates at all for 5 minutes
+          - alert: NoRateUpdates
+            expr: rate(rate_updates_total[5m]) == 0
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: "No rate updates from any scraper"
+              description: "Zero rate update throughput for 5+ minutes"
+
+      - name: news_worker_alerts
+        rules:
+          - alert: NewsWorkerDown
+            expr: up{job="news-worker"} == 0
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "News worker is down"
+              description: "News worker metrics endpoint unreachable for 5+ minutes"
+
+          - alert: NewsScrapeFailing
+            expr: rate(news_scrape_failures_total[30m]) > rate(news_scrape_success_total[30m])
+            for: 15m
+            labels:
+              severity: warning
+            annotations:
+              summary: "News scraper failure rate > 50%"
+              description: "More failures than successes in the last 30 minutes"
+
+          - alert: NewsNoSuccessfulScrape
+            expr: (time() - news_last_success_timestamp_seconds) > 1800
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: "No successful news scrape in 30+ minutes"
+              description: "Last success was {{ $value | humanizeDuration }} ago"
+
+      - name: app_alerts
+        rules:
+          - alert: HighErrorRate
+            expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High HTTP 5xx error rate"
+              description: "{{ $value | humanizePercentage }} of requests returning 5xx"
+
+          - alert: HighLatency
+            expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "High API latency"
+              description: "p95 latency is {{ $value }}s"
+---
+# --- Prometheus RBAC ---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus
+  namespace: comp-intel
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: prometheus-comp-intel
+rules:
+- apiGroups: [""]
+  resources: [pods, services, endpoints, nodes, nodes/metrics]
+  verbs: [get, list, watch]
+- nonResourceURLs: [/metrics]
+  verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus-comp-intel
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: prometheus-comp-intel
+subjects:
+- kind: ServiceAccount
+  name: prometheus
+  namespace: comp-intel
+---
+# --- Prometheus Deployment ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: comp-intel
+  labels:
+    app: prometheus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      serviceAccountName: prometheus
+      nodeSelector:
+        node-role: data
+      containers:
+      - name: prometheus
+        image: prom/prometheus:v2.51.0
+        args:
+        - --config.file=/etc/prometheus/prometheus.yml
+        - --storage.tsdb.path=/prometheus
+        - --storage.tsdb.retention.time=15d
+        - --storage.tsdb.retention.size=2GB
+        - --web.enable-lifecycle
+        ports:
+        - containerPort: 9090
+        volumeMounts:
+        - name: config
+          mountPath: /etc/prometheus
+        - name: data
+          mountPath: /prometheus
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "50m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /-/healthy
+            port: 9090
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /-/ready
+            port: 9090
+          initialDelaySeconds: 10
+          periodSeconds: 10
+      volumes:
+      - name: config
+        configMap:
+          name: prometheus-config
+      - name: data
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: comp-intel
+spec:
+  ports:
+  - port: 9090
+    targetPort: 9090
+  selector:
+    app: prometheus
+---
+# --- Grafana ConfigMaps ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources
+  namespace: comp-intel
+data:
+  datasources.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus:9090
+        isDefault: true
+        editable: false
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-provider
+  namespace: comp-intel
+data:
+  dashboards.yaml: |
+    apiVersion: 1
+    providers:
+      - name: default
+        orgId: 1
+        folder: ''
+        type: file
+        disableDeletion: false
+        updateIntervalSeconds: 30
+        options:
+          path: /var/lib/grafana/dashboards
+          foldersFromFilesStructure: false
+---
+# --- Grafana Deployment ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: comp-intel
+  labels:
+    app: grafana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      nodeSelector:
+        node-role: data
+      containers:
+      - name: grafana
+        image: grafana/grafana:10.4.1
+        ports:
+        - containerPort: 3000
+        env:
+        - name: GF_SECURITY_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: API_SECRET_KEY
+        - name: GF_USERS_ALLOW_SIGN_UP
+          value: "false"
+        - name: GF_SERVER_ROOT_URL
+          value: "https://apex.spotcompare.com/"
+        volumeMounts:
+        - name: datasources
+          mountPath: /etc/grafana/provisioning/datasources
+        - name: dashboard-provider
+          mountPath: /etc/grafana/provisioning/dashboards
+        - name: dashboards
+          mountPath: /var/lib/grafana/dashboards
+        - name: data
+          mountPath: /var/lib/grafana
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "25m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+      volumes:
+      - name: datasources
+        configMap:
+          name: grafana-datasources
+      - name: dashboard-provider
+        configMap:
+          name: grafana-dashboard-provider
+      - name: dashboards
+        configMap:
+          name: grafana-dashboards
+      - name: data
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: comp-intel
+spec:
+  ports:
+  - port: 3000
+    targetPort: 3000
+  selector:
+    app: grafana

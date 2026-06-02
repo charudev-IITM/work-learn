@@ -1,0 +1,217 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: comp-intel
+  labels:
+    app: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      nodeSelector:
+        node-role: app
+      initContainers:
+      - name: wait-for-postgres
+        image: postgres:15-alpine
+        env:
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: POSTGRES_PASSWORD
+        command:
+        - sh
+        - -c
+        - |
+          until pg_isready -h postgres -U postgres; do
+            echo "Waiting for postgres..."
+            sleep 2
+          done
+      - name: wait-for-redis
+        image: redis:7-alpine
+        command:
+        - sh
+        - -c
+        - |
+          until redis-cli -h redis ping; do
+            echo "Waiting for redis..."
+            sleep 2
+          done
+      containers:
+      - name: backend
+        image: REGISTRY_PLACEHOLDER/backend:IMAGE_TAG
+        ports:
+        - containerPort: 8000
+        env:
+        - name: DEPLOY_MODE
+          value: "api"
+        - name: REDIS_URL
+          value: "redis://redis:6379"
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: POSTGRES_PASSWORD
+        - name: DATABASE_URL
+          value: "postgresql://postgres:$(POSTGRES_PASSWORD)@pgbouncer:6432/bullion_intel"
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: JWT_SECRET
+        - name: API_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: API_SECRET_KEY
+        - name: MASTER_KEY
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: MASTER_KEY
+        - name: RAZORPAY_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: RAZORPAY_KEY_ID
+        - name: RAZORPAY_KEY_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: RAZORPAY_KEY_SECRET
+        - name: RAZORPAY_WEBHOOK_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: RAZORPAY_WEBHOOK_SECRET
+        - name: MEILISEARCH_URL
+          value: "http://meilisearch:7700"
+        - name: MEILISEARCH_MASTER_KEY
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: MEILISEARCH_MASTER_KEY
+        - name: TURNSTILE_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: TURNSTILE_SECRET_KEY
+        - name: INTERNAL_API_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: INTERNAL_API_SECRET
+        - name: MSG91_AUTH_KEY
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: MSG91_AUTH_KEY
+              optional: true
+        - name: MSG91_TEMPLATE_ID
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: MSG91_TEMPLATE_ID
+              optional: true
+        - name: MSG91_WHATSAPP_ALERT_TEMPLATE_ID
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: MSG91_WHATSAPP_ALERT_TEMPLATE_ID
+              optional: true
+        - name: MSG91_WHATSAPP_SENDER
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: MSG91_WHATSAPP_SENDER
+              optional: true
+        - name: GROQ_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: GROQ_API_KEY
+              optional: true
+        - name: COOKIE_SECURE
+          value: "true"
+        - name: ALLOWED_HOSTS
+          value: "app.DOMAIN_PLACEHOLDER,ops.DOMAIN_PLACEHOLDER"
+        - name: ENVIRONMENT
+          value: "production"
+        - name: LOG_LEVEL
+          value: "info"
+        - name: WORKERS
+          value: "4"
+        envFrom:
+        - configMapRef:
+            name: app-config
+        resources:
+          requests:
+            memory: "384Mi"
+            cpu: "250m"
+          limits:
+            memory: "768Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+            httpHeaders:
+            - name: Host
+              value: app.DOMAIN_PLACEHOLDER
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+            httpHeaders:
+            - name: Host
+              value: app.DOMAIN_PLACEHOLDER
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        startupProbe:
+          httpGet:
+            path: /health
+            port: 8000
+            httpHeaders:
+            - name: Host
+              value: app.DOMAIN_PLACEHOLDER
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: comp-intel
+  labels:
+    app: backend
+spec:
+  ports:
+  - port: 8000
+    targetPort: 8000
+    name: http
+  selector:
+    app: backend
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 3600

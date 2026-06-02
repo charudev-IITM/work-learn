@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: comp-intel
+  labels:
+    app.kubernetes.io/name: comp-intel
+    app.kubernetes.io/version: "1.0"

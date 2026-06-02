@@ -1,0 +1,63 @@
+# Staging Redis — ephemeral (emptyDir, no PVC), receives all staging writes
+# Production scraper data is read via shared_redis (cross-namespace, ACL-restricted)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: comp-intel-staging
+  labels:
+    app: redis
+    environment: staging
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: redis
+      environment: staging
+  template:
+    metadata:
+      labels:
+        app: redis
+        environment: staging
+    spec:
+      nodeSelector:
+        node-role: app
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+        command: [redis-server, --save, "", --appendonly, "no", --maxmemory, 64mb, --maxmemory-policy, volatile-lru]
+        resources:
+          requests:
+            cpu: 25m
+            memory: 32Mi
+          limits:
+            cpu: 100m
+            memory: 96Mi
+        readinessProbe:
+          exec:
+            command: [redis-cli, ping]
+          initialDelaySeconds: 3
+          periodSeconds: 10
+        livenessProbe:
+          exec:
+            command: [redis-cli, ping]
+          initialDelaySeconds: 10
+          periodSeconds: 30
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: comp-intel-staging
+spec:
+  selector:
+    app: redis
+    environment: staging
+  ports:
+  - port: 6379
+    targetPort: 6379

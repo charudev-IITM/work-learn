@@ -1,0 +1,38 @@
+FROM node:18-alpine AS builder
+WORKDIR /monorepo
+
+# Copy workspace config + all package.json files
+COPY package.json package-lock.json ./
+COPY packages/shared/package.json packages/shared/
+COPY admin/package.json admin/
+
+# Install with workspace context
+RUN npm ci --workspace=admin --workspace=@comp-intel/shared
+
+# Copy source code
+COPY packages/shared/ packages/shared/
+COPY admin/ admin/
+
+# Build
+RUN cd admin && npm run build
+
+# Production stage
+FROM nginx:alpine
+
+# Copy built assets
+COPY --from=builder /monorepo/admin/dist /usr/share/nginx/html
+
+# Copy nginx configuration (reuse SPA fallback config)
+COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
+
+# Install curl for health checks
+RUN apk add --no-cache curl
+
+# Expose port
+EXPOSE 80
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost/ || exit 1
+
+CMD ["nginx", "-g", "daemon off;"]

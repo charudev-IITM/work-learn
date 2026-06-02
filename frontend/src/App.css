@@ -1,0 +1,574 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 84% 4.9%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 94.1%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    overflow-x: clip;
+  }
+}
+
+/* ─── Dashboard animations ─── */
+
+/* Card entrance: staggered fade-up */
+@keyframes dashFadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.dash-card-enter {
+  animation: dashFadeUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.dash-card-enter:nth-child(1) { animation-delay: 0ms; }
+.dash-card-enter:nth-child(2) { animation-delay: 80ms; }
+.dash-card-enter:nth-child(3) { animation-delay: 160ms; }
+.dash-card-enter:nth-child(4) { animation-delay: 240ms; }
+
+
+/* Slow-drifting ambient orbs */
+@keyframes orbDrift1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%      { transform: translate(15px, -20px) scale(1.05); }
+  66%      { transform: translate(-10px, 10px) scale(0.95); }
+}
+@keyframes orbDrift2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%      { transform: translate(-20px, 15px) scale(1.08); }
+  66%      { transform: translate(10px, -10px) scale(0.92); }
+}
+@keyframes orbDrift3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(12px, 8px) scale(1.04); }
+}
+.orb-drift-1 { animation: orbDrift1 12s ease-in-out infinite; transition: background-color 3000ms ease; }
+.orb-drift-2 { animation: orbDrift2 15s ease-in-out infinite; transition: background-color 3000ms ease; }
+.orb-drift-3 { animation: orbDrift3 10s ease-in-out infinite; transition: background-color 3000ms ease; }
+
+/* Night sky star twinkle */
+@keyframes starTwinkle {
+  0%, 100% { opacity: 0.3; }
+  50%      { opacity: 1; }
+}
+.star-twinkle {
+  animation: starTwinkle 4s ease-in-out infinite;
+}
+
+/* Onboarding wizard animations */
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+
+.animate-shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+/* Hide scrollbar for horizontal carousels */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+
+/* Custom styles for rate updates */
+.rate-updated {
+  @apply bg-green-100 dark:bg-green-900/20;
+  animation: pulse 1s ease-in-out;
+}
+
+.rate-increased {
+  @apply text-green-600 dark:text-green-400;
+}
+
+.rate-decreased {
+  @apply text-red-600 dark:text-red-400;
+}
+
+.connection-indicator {
+  @apply inline-flex items-center px-2 py-1 rounded-full text-xs font-medium;
+}
+
+.connection-connected {
+  @apply bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400;
+}
+
+.connection-disconnected {
+  @apply bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400;
+}
+
+/* Grid styles */
+.dashboard-grid {
+  @apply grid gap-1 p-4;
+  grid-template-columns: 200px repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.grid-header {
+  @apply bg-muted/50 font-semibold text-center p-2 rounded border;
+}
+
+.grid-row-header {
+  @apply bg-muted/50 font-medium p-2 rounded border text-left;
+}
+
+.grid-cell {
+  @apply border rounded p-2 text-center hover:bg-muted/50 transition-colors;
+}
+
+.rate-cell {
+  @apply min-h-[60px] flex flex-col justify-center;
+}
+
+.buy-rate {
+  @apply text-blue-600 dark:text-blue-400 font-medium;
+}
+
+.sell-rate {
+  @apply text-purple-600 dark:text-purple-400 font-medium;
+}
+
+/* Compact density styles */
+.dashboard-grid.compact .grid-header {
+  @apply p-1 text-sm;
+}
+
+.dashboard-grid.compact .grid-row-header {
+  @apply p-1 text-sm;
+}
+
+.dashboard-grid.compact .grid-cell {
+  @apply p-1 min-h-[40px];
+}
+
+.dashboard-grid.compact .rate-cell {
+  @apply min-h-[40px];
+}
+
+
+/* Leader highlighting */
+.leader-highlight {
+  @apply ring-2 ring-offset-1 shadow-md;
+}
+
+/* Row sorting animations */
+.sort-row {
+  transition: transform 0.3s ease, background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.sort-row:hover {
+  transform: translateY(-1px);
+}
+
+/* Pegged competitor highlighting */
+.pegged-row {
+  @apply bg-primary/5 border-primary/20;
+  box-shadow: 0 0 0 1px rgba(var(--primary), 0.1);
+}
+
+.best-buy {
+  @apply ring-green-500 bg-green-50 dark:bg-green-950/50;
+}
+
+.best-sell {
+  @apply ring-blue-500 bg-blue-50 dark:bg-blue-950/50;
+}
+
+/* Tab animations */
+.tab-enter {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.tab-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 200ms, transform 200ms;
+}
+
+.tab-exit {
+  opacity: 1;
+}
+
+.tab-exit-active {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 200ms, transform 200ms;
+}
+
+
+/* Drag and Drop styles */
+.drag-preview {
+  transform: rotate(5deg) scale(1.05);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.drop-zone {
+  transition: all 0.2s ease;
+  border-color: rgba(59, 130, 246, 0.5);
+  background-color: rgba(59, 130, 246, 0.05);
+}
+
+.drag-over {
+  border-width: 2px;
+  border-style: dashed;
+  border-color: rgb(59, 130, 246);
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+/* Marquee animation for overflowing tab names */
+@keyframes marquee {
+  0%, 20% { transform: translateX(0); }
+  80%, 100% { transform: translateX(calc(-100% + 7rem)); }
+}
+.animate-marquee {
+  animation: marquee 4s ease-in-out infinite alternate;
+}
+
+/* Search overlay slide-up entrance */
+@keyframes slide-up {
+  from { transform: translateY(100%); opacity: 0.5; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.animate-slide-up {
+  animation: slide-up 0.2s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-slide-up {
+    animation: none;
+  }
+}
+
+/* Compare button gradient shimmer */
+@keyframes shimmer {
+  0%   { background-position: 200% center; }
+  100% { background-position: -200% center; }
+}
+.animate-shimmer {
+  background-size: 200% auto;
+  animation: shimmer 3s linear infinite;
+}
+
+/* Watchlist items — no layout animations (distracting on live ticking data) */
+.watchlist-item {
+  transform-origin: center;
+}
+
+.watchlist-container {
+  position: relative;
+}
+
+/* Reduce/remove watchlist animations for users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .watchlist-item {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* Enhanced differences mode styling */
+.differences-mode .watchlist-item {
+  position: relative;
+  overflow: hidden;
+}
+
+.differences-mode .watchlist-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(to bottom, var(--primary), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.differences-mode .watchlist-item.reference::before {
+  background: linear-gradient(to bottom, rgb(59, 130, 246), transparent);
+  opacity: 1;
+}
+
+.differences-mode .watchlist-item.significant-difference::before {
+  opacity: 0.7;
+}
+
+.differences-mode .watchlist-item.positive-difference::before {
+  background: linear-gradient(to bottom, rgb(239, 68, 68), transparent);
+}
+
+.differences-mode .watchlist-item.negative-difference::before {
+  background: linear-gradient(to bottom, rgb(34, 197, 94), transparent);
+}
+
+/* Mobile scrolling improvements */
+@media (max-width: 768px) {
+  .watchlist-container {
+    /* Ensure smooth scrolling on mobile */
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+  
+  /* Fix for mobile height calculations */
+  .flex-1 {
+    min-height: 0;
+    flex-shrink: 0;
+  }
+  
+  /* Ensure scrollable containers work properly on mobile */
+  .overflow-y-auto {
+    /* Mobile Safari needs explicit height for scrolling */
+    height: 100%;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+  
+  /* Differences mode specific mobile fixes */
+  .differences-mode {
+    /* Ensure proper containment for scrolling */
+    contain: layout style;
+  }
+  
+  /* Watchlist items should allow scrolling */
+  .watchlist-item {
+    /* Allow scrolling while preventing double-tap zoom */
+    touch-action: pan-y manipulation;
+  }
+  
+  /* Drag handles on mobile should be more explicit */
+  .drag-handle {
+    /* Allow both drag and scroll gestures */
+    touch-action: pan-y pinch-zoom;
+    cursor: grab;
+  }
+  
+  /* When actively dragging, prevent scrolling */
+  .drag-handle:active,
+  .dragging {
+    touch-action: none;
+    cursor: grabbing;
+  }
+}
+
+/* ─── Goldie AI Chat ─── */
+
+/* SmoothUI Siri Orb — golden customization
+   Uses CSS Houdini @property for smooth conic-gradient rotation.
+   Colors set via --c1, --c2, --c3, --bg CSS custom properties. */
+
+@property --angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.siri-orb {
+  display: grid;
+  grid-template-areas: "stack";
+  overflow: hidden;
+  border-radius: 50%;
+  position: relative;
+  filter: drop-shadow(0 2px 10px rgba(245, 158, 11, 0.5))
+          drop-shadow(0 0 20px rgba(234, 179, 8, 0.25));
+  animation: goldieGlow 3s ease-in-out infinite;
+}
+
+@keyframes goldieGlow {
+  0%, 100% {
+    filter: drop-shadow(0 2px 10px rgba(245, 158, 11, 0.5))
+            drop-shadow(0 0 20px rgba(234, 179, 8, 0.25));
+  }
+  50% {
+    filter: drop-shadow(0 4px 16px rgba(245, 158, 11, 0.7))
+            drop-shadow(0 0 28px rgba(234, 179, 8, 0.45));
+  }
+}
+
+.siri-orb::before,
+.siri-orb::after {
+  content: "";
+  display: block;
+  grid-area: stack;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
+.siri-orb::before {
+  background:
+    conic-gradient(
+      from calc(var(--angle) * 2) at 25% 70%,
+      var(--c3), transparent 20% 80%, var(--c3)
+    ),
+    conic-gradient(
+      from calc(var(--angle) * 2) at 45% 75%,
+      var(--c2), transparent 30% 60%, var(--c2)
+    ),
+    conic-gradient(
+      from calc(var(--angle) * -3) at 80% 20%,
+      var(--c1), transparent 40% 60%, var(--c1)
+    ),
+    conic-gradient(
+      from calc(var(--angle) * 2) at 15% 5%,
+      var(--c2), transparent 10% 90%, var(--c2)
+    ),
+    conic-gradient(
+      from calc(var(--angle) * 1) at 20% 80%,
+      var(--c1), transparent 10% 90%, var(--c1)
+    ),
+    conic-gradient(
+      from calc(var(--angle) * -2) at 85% 10%,
+      var(--c3), transparent 20% 80%, var(--c3)
+    );
+  box-shadow: inset var(--bg) 0 0 var(--shadow-spread) calc(var(--shadow-spread) * 0.2);
+  filter: blur(var(--blur-amount)) contrast(var(--contrast-amount));
+  animation: siriOrbRotate var(--animation-duration) linear infinite;
+}
+
+.siri-orb::after {
+  background-image: radial-gradient(
+    circle at center,
+    var(--bg) var(--dot-size),
+    transparent var(--dot-size)
+  );
+  background-size: calc(var(--dot-size) * 2) calc(var(--dot-size) * 2);
+  backdrop-filter: blur(calc(var(--blur-amount) * 2)) contrast(calc(var(--contrast-amount) * 2));
+  mix-blend-mode: overlay;
+  mask-image: radial-gradient(black var(--mask-radius), transparent 75%);
+}
+
+@keyframes siriOrbRotate {
+  to {
+    --angle: 360deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .siri-orb::before {
+    animation: none;
+  }
+  .siri-orb {
+    animation: none;
+  }
+}
+
+@keyframes goldiePanelEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.06) translateY(44px);
+    transform-origin: center bottom;
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    transform-origin: center bottom;
+  }
+}
+
+@keyframes goldiePanelExit {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    transform-origin: center bottom;
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.06) translateY(44px);
+    transform-origin: center bottom;
+  }
+}
+
+.goldie-panel-enter {
+  animation: goldiePanelEnter 320ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.goldie-panel-exit {
+  animation: goldiePanelExit 240ms cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+/* ─── Goldie nav tap ripple ─── */
+
+@keyframes goldieTapRipple {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.6);
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.4;
+    box-shadow: 0 0 0 10px rgba(245, 158, 11, 0);
+  }
+  100% {
+    transform: scale(1.25);
+    opacity: 0;
+    box-shadow: 0 0 0 16px rgba(245, 158, 11, 0);
+  }
+}
+
+.goldie-tap-ripple {
+  background: radial-gradient(circle, rgba(252, 211, 77, 0.4) 0%, rgba(245, 158, 11, 0.15) 60%, transparent 70%);
+  animation: goldieTapRipple 280ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+

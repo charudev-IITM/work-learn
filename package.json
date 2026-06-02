@@ -1,0 +1,11 @@
+{
+  "name": "comp-intel-monorepo",
+  "private": true,
+  "workspaces": ["packages/*", "frontend", "mobile", "admin"],
+  "dependencies": {
+    "@playwright/mcp": "^0.0.35",
+    "axios": "^1.11.0",
+    "playwright": "^1.55.0",
+    "ws": "^8.18.3"
+  }
+}

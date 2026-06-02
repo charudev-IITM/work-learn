@@ -1,0 +1,69 @@
+# Staging PgBouncer
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pgbouncer
+  namespace: comp-intel-staging
+  labels:
+    app: pgbouncer
+    environment: staging
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pgbouncer
+      environment: staging
+  template:
+    metadata:
+      labels:
+        app: pgbouncer
+        environment: staging
+    spec:
+      nodeSelector:
+        node-role: app
+      containers:
+      - name: pgbouncer
+        image: edoburu/pgbouncer:latest
+        ports:
+        - containerPort: 6432
+        resources:
+          requests:
+            cpu: 25m
+            memory: 32Mi
+          limits:
+            cpu: 50m
+            memory: 64Mi
+        volumeMounts:
+        - name: config
+          mountPath: /etc/pgbouncer/pgbouncer.ini
+          subPath: pgbouncer.ini
+        - name: config
+          mountPath: /etc/pgbouncer/userlist.txt
+          subPath: userlist.txt
+        readinessProbe:
+          tcpSocket:
+            port: 6432
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          tcpSocket:
+            port: 6432
+          initialDelaySeconds: 10
+          periodSeconds: 10
+      volumes:
+      - name: config
+        configMap:
+          name: pgbouncer-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pgbouncer
+  namespace: comp-intel-staging
+spec:
+  selector:
+    app: pgbouncer
+    environment: staging
+  ports:
+  - port: 6432
+    targetPort: 6432

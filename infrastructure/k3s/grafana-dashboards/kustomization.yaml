@@ -1,0 +1,6 @@
+# Helper: generate the grafana-dashboards ConfigMap from JSON files.
+# Run from this directory:
+#   kubectl create configmap grafana-dashboards \
+#     --from-file=scraper-overview.json \
+#     --from-file=dealer-intelligence.json \
+#     -n comp-intel --dry-run=client -o yaml | kubectl apply -f -

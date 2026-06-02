@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: meilisearch
+  namespace: comp-intel
+  labels:
+    app: meilisearch
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: meilisearch
+  template:
+    metadata:
+      labels:
+        app: meilisearch
+    spec:
+      nodeSelector:
+        node-role: data
+      containers:
+      - name: meilisearch
+        image: getmeili/meilisearch:v1.10
+        ports:
+        - containerPort: 7700
+        env:
+        - name: MEILI_MASTER_KEY
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: MEILISEARCH_MASTER_KEY
+        - name: MEILI_ENV
+          value: "production"
+        - name: MEILI_DB_PATH
+          value: "/meili_data"
+        volumeMounts:
+        - name: meili-data
+          mountPath: /meili_data
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "250m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 7700
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 7700
+          initialDelaySeconds: 10
+          periodSeconds: 10
+      volumes:
+      - name: meili-data
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: meilisearch
+  namespace: comp-intel
+  labels:
+    app: meilisearch
+spec:
+  ports:
+  - port: 7700
+    targetPort: 7700
+  selector:
+    app: meilisearch

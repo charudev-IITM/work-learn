@@ -1,0 +1,89 @@
+# Traefik Middleware for security headers
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: security-headers
+  namespace: comp-intel
+spec:
+  headers:
+    frameDeny: true
+    browserXssFilter: true
+    contentTypeNosniff: true
+    referrerPolicy: "no-referrer-when-downgrade"
+    customResponseHeaders:
+      X-Frame-Options: "SAMEORIGIN"
+---
+# Traefik Middleware for rate limiting
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: rate-limit
+  namespace: comp-intel
+spec:
+  rateLimit:
+    average: 100
+    burst: 200
+    period: 1m
+---
+# Traefik Middleware for demo endpoint rate limiting
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: demo-rate-limit
+  namespace: comp-intel
+spec:
+  rateLimit:
+    average: 10
+    burst: 20
+    period: 1m
+---
+# Main Ingress - API, WebSocket, and Frontend
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: comp-intel-ingress
+  namespace: comp-intel
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: comp-intel-security-headers@kubernetescrd,comp-intel-rate-limit@kubernetescrd
+spec:
+  ingressClassName: traefik
+  tls:
+  - hosts:
+    - app.DOMAIN_PLACEHOLDER
+    secretName: origin-ca-tls
+  rules:
+  - host: app.DOMAIN_PLACEHOLDER
+    http:
+      paths:
+      # API routes
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: backend
+            port:
+              number: 8000
+      # Health check
+      - path: /health
+        pathType: Prefix
+        backend:
+          service:
+            name: backend
+            port:
+              number: 8000
+      # WebSocket endpoint (Traefik handles upgrade natively)
+      - path: /ws
+        pathType: Prefix
+        backend:
+          service:
+            name: backend
+            port:
+              number: 8000
+      # Frontend (default catch-all)
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend
+            port:
+              number: 80

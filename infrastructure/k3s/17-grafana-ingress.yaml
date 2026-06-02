@@ -1,0 +1,26 @@
+# Grafana Ingress — apex.spotcompare.com
+# Dedicated hostname for Grafana dashboard access
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: grafana-ingress
+  namespace: comp-intel
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: comp-intel-security-headers@kubernetescrd
+spec:
+  ingressClassName: traefik
+  tls:
+  - hosts:
+    - apex.DOMAIN_PLACEHOLDER
+    secretName: origin-ca-tls
+  rules:
+  - host: apex.DOMAIN_PLACEHOLDER
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: grafana
+            port:
+              number: 3000

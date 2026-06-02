@@ -1,0 +1,111 @@
+# Staging Ingress — routes staging.DOMAIN_PLACEHOLDER to staging namespace
+# Basic Auth credentials (username: staging, password: spotcompare20012024)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: staging-basic-auth
+  namespace: comp-intel-staging
+type: Opaque
+stringData:
+  users: "staging:$2y$05$oOgwIZWn0S5AOkPhkHDaYu6H4NizFKspURk8zJI.BRyNryEbAztqC"
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: basic-auth
+  namespace: comp-intel-staging
+spec:
+  basicAuth:
+    secret: staging-basic-auth
+    removeHeader: true
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: security-headers
+  namespace: comp-intel-staging
+spec:
+  headers:
+    frameDeny: true
+    browserXssFilter: true
+    contentTypeNosniff: true
+    referrerPolicy: "no-referrer-when-downgrade"
+    customResponseHeaders:
+      X-Frame-Options: "SAMEORIGIN"
+      X-Robots-Tag: "noindex, nofollow"
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: rate-limit
+  namespace: comp-intel-staging
+spec:
+  rateLimit:
+    average: 100
+    burst: 200
+    period: 1m
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: staging-ingress
+  namespace: comp-intel-staging
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: comp-intel-staging-basic-auth@kubernetescrd,comp-intel-staging-security-headers@kubernetescrd,comp-intel-staging-rate-limit@kubernetescrd
+spec:
+  ingressClassName: traefik
+  tls:
+  - hosts:
+    - staging.DOMAIN_PLACEHOLDER
+    secretName: origin-ca-tls
+  rules:
+  - host: staging.DOMAIN_PLACEHOLDER
+    http:
+      paths:
+      # API routes
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: backend
+            port:
+              number: 8000
+      # Health check
+      - path: /health
+        pathType: Prefix
+        backend:
+          service:
+            name: backend
+            port:
+              number: 8000
+      # API docs
+      - path: /docs
+        pathType: Prefix
+        backend:
+          service:
+            name: backend
+            port:
+              number: 8000
+      - path: /openapi.json
+        pathType: Exact
+        backend:
+          service:
+            name: backend
+            port:
+              number: 8000
+      # WebSocket endpoint
+      - path: /ws
+        pathType: Prefix
+        backend:
+          service:
+            name: backend
+            port:
+              number: 8000
+      # Frontend (default catch-all)
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend
+            port:
+              number: 80

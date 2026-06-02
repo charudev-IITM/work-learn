@@ -1,0 +1,2 @@
+# Format: "username" "password"
+# Password will be set via environment variable in docker entrypoint

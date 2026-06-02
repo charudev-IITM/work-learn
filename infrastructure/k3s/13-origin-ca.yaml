@@ -1,0 +1,17 @@
+# Cloudflare Origin CA TLS secret
+# Replace tls.crt and tls.key with actual Cloudflare Origin CA certificate
+# Generated via: Cloudflare Dashboard > SSL/TLS > Origin Server > Create Certificate
+# Validity: 15 years, free, no renewal needed
+#
+# After generating, base64 encode the cert and key:
+#   cat origin-cert.pem | base64 -w0
+#   cat origin-key.pem | base64 -w0
+apiVersion: v1
+kind: Secret
+metadata:
+  name: origin-ca-tls
+  namespace: comp-intel
+type: kubernetes.io/tls
+data:
+  tls.crt: REPLACE_WITH_BASE64_ENCODED_ORIGIN_CERT
+  tls.key: REPLACE_WITH_BASE64_ENCODED_ORIGIN_KEY

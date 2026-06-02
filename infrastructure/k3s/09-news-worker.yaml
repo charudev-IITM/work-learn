@@ -1,0 +1,109 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: news-worker
+  namespace: comp-intel
+  labels:
+    app: news-worker
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: news-worker
+  template:
+    metadata:
+      labels:
+        app: news-worker
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9091"
+    spec:
+      nodeSelector:
+        node-role: data
+      initContainers:
+      - name: wait-for-redis
+        image: redis:7-alpine
+        command:
+        - sh
+        - -c
+        - |
+          until redis-cli -h redis ping; do
+            echo "Waiting for redis..."
+            sleep 2
+          done
+      - name: wait-for-postgres
+        image: postgres:15-alpine
+        env:
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: POSTGRES_PASSWORD
+        command:
+        - sh
+        - -c
+        - |
+          until pg_isready -h postgres -U postgres; do
+            echo "Waiting for postgres..."
+            sleep 2
+          done
+      containers:
+      - name: news-worker
+        image: REGISTRY_PLACEHOLDER/backend:IMAGE_TAG
+        command: ["python", "news_worker.py"]
+        ports:
+        - containerPort: 9091
+          name: metrics
+        env:
+        - name: REDIS_URL
+          value: "redis://redis:6379"
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: POSTGRES_PASSWORD
+        - name: DATABASE_URL
+          value: "postgresql://postgres:$(POSTGRES_PASSWORD)@pgbouncer:6432/bullion_intel"
+        - name: MEILISEARCH_URL
+          value: "http://meilisearch:7700"
+        - name: MEILISEARCH_MASTER_KEY
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: MEILISEARCH_MASTER_KEY
+        - name: NEWS_POLL_INTERVAL
+          value: "300"
+        - name: ENVIRONMENT
+          value: "production"
+        - name: ZYTE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: ZYTE_API_KEY
+              optional: true
+        - name: LOG_LEVEL
+          value: "info"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "50m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: news-worker
+  namespace: comp-intel
+  labels:
+    app: news-worker
+spec:
+  ports:
+  - port: 9091
+    targetPort: 9091
+    name: metrics
+  selector:
+    app: news-worker

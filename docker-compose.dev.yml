@@ -1,0 +1,214 @@
+version: '3.8'
+
+services:
+  backend:
+    init: true
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend.dev
+    ports:
+      - "8888:8888"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/bullion_intel
+      - ENVIRONMENT=development
+      - PYTHONPATH=/app
+      - MASTER_KEY=${MASTER_KEY:-super_secret_master_key_123!}
+      - JWT_SECRET=${JWT_SECRET:-dev_jwt_secret_456!}
+      - RAZORPAY_KEY_ID=rzp_test_SNG9A0kzLBhFOg
+      - RAZORPAY_KEY_SECRET=VKT80HtGvBvoacSbe4cdSG43
+      - RAZORPAY_WEBHOOK_SECRET=9gQYdMhr6Zuac@W
+      - RAZORPAY_PLAN_ID_MONTHLY=plan_SNGOawFhKTft9f
+      - RAZORPAY_PLAN_ID_ANNUAL=plan_SQEpuJwn8F73OK
+      - DEPLOY_MODE=api
+      - MEILISEARCH_URL=http://meilisearch:7700
+      - MEILISEARCH_MASTER_KEY=meili_dev_key_123
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - MSG91_AUTH_KEY=${MSG91_AUTH_KEY:-}
+      - MSG91_TEMPLATE_ID=${MSG91_TEMPLATE_ID:-}
+      - MSG91_WHATSAPP_ALERT_TEMPLATE_ID=${MSG91_WHATSAPP_ALERT_TEMPLATE_ID:-}
+      - MSG91_WHATSAPP_SENDER=${MSG91_WHATSAPP_SENDER:-}
+      - DEV_OTP_BYPASS=${DEV_OTP_BYPASS:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      - ./backend:/app
+      - backend_cache:/app/__pycache__
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8888 --reload --log-level info
+    networks:
+      - dev-network
+
+  scraper-worker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend.dev
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/bullion_intel
+      - ENVIRONMENT=development
+      - PYTHONPATH=/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      - ./backend:/app
+      - backend_cache:/app/__pycache__
+    command: python scraper_worker.py
+    networks:
+      - dev-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend.dev
+    ports:
+      - "3333:3333"
+    environment:
+      - NODE_ENV=development
+      - DOCKER=true
+      - VITE_DOCKER=true
+      - VITE_API_URL=
+    depends_on:
+      - backend
+    restart: unless-stopped
+    volumes:
+      - ./frontend:/monorepo/frontend
+      - ./packages/shared:/monorepo/packages/shared
+      - frontend_modules:/monorepo/node_modules
+    command: sh -c "cd frontend && npm run dev -- --host 0.0.0.0 --port 3333"
+    networks:
+      - dev-network
+
+  admin:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.admin.dev
+    ports:
+      - "3334:3334"
+    environment:
+      - NODE_ENV=development
+      - DOCKER=true
+      - VITE_DOCKER=true
+    depends_on:
+      - backend
+    restart: unless-stopped
+    volumes:
+      - ./admin:/monorepo/admin
+      - ./packages/shared:/monorepo/packages/shared
+      - admin_modules:/monorepo/node_modules
+    command: sh -c "cd admin && npm run dev -- --host 0.0.0.0 --port 3334"
+    networks:
+      - dev-network
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=bullion_intel
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5454:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dev-network
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6666:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    command: redis-server --save 60 1000 --appendonly no --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - dev-network
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.10
+    ports:
+      - "7700:7700"
+    environment:
+      - MEILI_MASTER_KEY=meili_dev_key_123
+      - MEILI_ENV=development
+    volumes:
+      - meili_data:/meili_data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7700/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dev-network
+
+  news-worker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend.dev
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/bullion_intel
+      - PYTHONPATH=/app
+      - MEILISEARCH_URL=http://meilisearch:7700
+      - MEILISEARCH_MASTER_KEY=meili_dev_key_123
+      - NEWS_POLL_INTERVAL=300
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      meilisearch:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      - ./backend:/app
+      - backend_cache:/app/__pycache__
+    command: python news_worker.py
+    networks:
+      - dev-network
+
+  # Optional: Redis admin interface for debugging
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    ports:
+      - "8181:8081"
+    depends_on:
+      - redis
+    profiles:
+      - debug
+    networks:
+      - dev-network
+
+volumes:
+  postgres_data:
+  redis_data:
+  backend_cache:
+  frontend_modules:
+  admin_modules:
+  meili_data:
+
+networks:
+  dev-network:
+    driver: bridge

@@ -1,0 +1,758 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [
+    {
+      "title": "Scraper & APM Dashboard",
+      "url": "/d/scraper-overview",
+      "type": "link",
+      "icon": "external link",
+      "targetBlank": false
+    }
+  ],
+  "panels": [
+    {
+      "title": "Coverage Summary",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 1,
+      "title": "Total Dealers",
+      "description": "Total registered dealers across all scraper types",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "blue", "value": null }]
+          },
+          "unit": "short",
+          "decimals": 0
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "textMode": "auto",
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "expr": "dealer_total",
+          "legendFormat": "Dealers",
+          "instant": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Total Scripts",
+      "description": "Total rate scripts published across all dealers",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "purple", "value": null }]
+          },
+          "unit": "short",
+          "decimals": 0
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "textMode": "auto",
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "expr": "dealer_scripts_total",
+          "legendFormat": "Scripts",
+          "instant": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Cities Covered",
+      "description": "Unique cities with at least one active dealer",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": null }]
+          },
+          "unit": "short",
+          "decimals": 0
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "textMode": "auto",
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "expr": "dealer_cities_total",
+          "legendFormat": "Cities",
+          "instant": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "VOTS Dealers",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 3, "x": 12, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "semi-dark-orange", "value": null }]
+          },
+          "unit": "short",
+          "decimals": 0
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "textMode": "auto",
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "expr": "dealer_count_by_type{scraper_type=\"vots\"}",
+          "legendFormat": "VOTS",
+          "instant": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "WinBull Dealers",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 3, "x": 15, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "semi-dark-blue", "value": null }]
+          },
+          "unit": "short",
+          "decimals": 0
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "textMode": "auto",
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "expr": "dealer_count_by_type{scraper_type=\"winbull\"}",
+          "legendFormat": "WinBull",
+          "instant": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "SocketIO Dealers",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 3, "x": 18, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "semi-dark-green", "value": null }]
+          },
+          "unit": "short",
+          "decimals": 0
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "textMode": "auto",
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "expr": "dealer_count_by_type{scraper_type=\"socketio\"}",
+          "legendFormat": "SocketIO",
+          "instant": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Custom Dealers",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 3, "x": 21, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "semi-dark-red", "value": null }]
+          },
+          "unit": "short",
+          "decimals": 0
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "textMode": "auto",
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "expr": "dealer_count_by_type{scraper_type=\"custom\"}",
+          "legendFormat": "Custom",
+          "instant": true,
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "title": "Distribution Charts",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 10,
+      "title": "Dealers by City (Top 15)",
+      "description": "Distribution of dealer headquarters across Indian cities",
+      "type": "piechart",
+      "gridPos": { "h": 12, "w": 8, "x": 0, "y": 6 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "pieType": "pie",
+        "displayLabels": ["name", "value"],
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": { "mode": "single" }
+      },
+      "targets": [
+        {
+          "expr": "topk(15, taxonomy_dealers_by_city)",
+          "legendFormat": "{{city}}",
+          "instant": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "title": "Scripts by Commodity & Purity",
+      "description": "Number of rate scripts classified per commodity and purity tier",
+      "type": "barchart",
+      "gridPos": { "h": 12, "w": 9, "x": 8, "y": 6 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "options": {
+        "orientation": "vertical",
+        "xTickLabelRotation": -30,
+        "groupWidth": 0.7,
+        "barWidth": 0.9,
+        "stacking": "none",
+        "fillOpacity": 80,
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "expr": "taxonomy_scripts_by_purity",
+          "legendFormat": "{{commodity}} / {{purity}}",
+          "instant": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "title": "Dealers by Scraper Type",
+      "description": "Breakdown of scraper technology distribution",
+      "type": "barchart",
+      "gridPos": { "h": 12, "w": 7, "x": 17, "y": 6 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "color": { "mode": "palette-classic" }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "vots" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "semi-dark-orange", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "winbull" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "semi-dark-blue", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "socketio" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "semi-dark-green", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "custom" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "semi-dark-red", "mode": "fixed" } }]
+          }
+        ]
+      },
+      "options": {
+        "orientation": "horizontal",
+        "groupWidth": 0.7,
+        "barWidth": 0.9,
+        "fillOpacity": 80,
+        "tooltip": { "mode": "single" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "targets": [
+        {
+          "expr": "dealer_count_by_type",
+          "legendFormat": "{{scraper_type}}",
+          "instant": true,
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "title": "Dealer Registry",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 18 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 20,
+      "title": "Dealer Directory",
+      "description": "All registered dealers with city, state, scraper type, and script count. Click column headers to sort.",
+      "type": "table",
+      "gridPos": { "h": 14, "w": 24, "x": 0, "y": 19 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "left",
+            "displayMode": "auto",
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Dealer" },
+            "properties": [
+              { "id": "custom.width", "value": 180 },
+              { "id": "custom.filterable", "value": true }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "City" },
+            "properties": [
+              { "id": "custom.width", "value": 130 },
+              { "id": "custom.filterable", "value": true }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "State" },
+            "properties": [
+              { "id": "custom.width", "value": 150 },
+              { "id": "custom.filterable", "value": true }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Type" },
+            "properties": [
+              { "id": "custom.width", "value": 100 },
+              { "id": "custom.displayMode", "value": "color-background-solid" },
+              { "id": "mappings", "value": [
+                { "type": "value", "options": {
+                  "vots":     { "text": "VOTS",     "color": "orange" },
+                  "winbull":  { "text": "WinBull",  "color": "blue" },
+                  "socketio": { "text": "SocketIO", "color": "green" },
+                  "custom":   { "text": "Custom",   "color": "red" }
+                }}
+              ]},
+              { "id": "custom.filterable", "value": true }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Scripts" },
+            "properties": [
+              { "id": "custom.width", "value": 90 },
+              { "id": "custom.displayMode", "value": "color-background-solid" },
+              { "id": "thresholds", "value": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "blue", "value": null },
+                  { "color": "green", "value": 10 },
+                  { "color": "orange", "value": 30 }
+                ]
+              }}
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Time" },
+            "properties": [{ "id": "custom.hidden", "value": true }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Time" },
+            "properties": [{ "id": "custom.hidden", "value": true }]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "sortBy": [{ "displayName": "Scripts", "desc": true }],
+        "footer": { "show": false }
+      },
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "renameByName": {
+              "dealer": "Dealer",
+              "city": "City",
+              "state": "State",
+              "scraper_type": "Type",
+              "Value": "Scripts"
+            }
+          }
+        }
+      ],
+      "targets": [
+        {
+          "expr": "dealer_info",
+          "legendFormat": "{{dealer}}",
+          "instant": true,
+          "format": "table",
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "title": "Script Drill-down \u2014 $dealer",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 33 },
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "id": 30,
+      "title": "Script Count",
+      "description": "Total scripts offered by the selected dealer",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 34 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "purple", "value": null }] },
+          "unit": "short",
+          "decimals": 0
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "textMode": "auto",
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "expr": "count(dealer_script_taxonomy{dealer=~\"$dealer\"})",
+          "legendFormat": "Scripts",
+          "instant": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 31,
+      "title": "Commodities Offered",
+      "description": "Distinct commodities in the selected dealer's script catalogue",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 34 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] },
+          "unit": "short",
+          "decimals": 0
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "textMode": "auto",
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "expr": "count(count by (commodity) (dealer_script_taxonomy{dealer=~\"$dealer\"}))",
+          "legendFormat": "Commodities",
+          "instant": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 32,
+      "title": "Cities in Scripts",
+      "description": "Distinct cities this dealer's scripts reference",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 34 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] },
+          "unit": "short",
+          "decimals": 0
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "textMode": "auto",
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "expr": "count(count by (city) (dealer_script_taxonomy{dealer=~\"$dealer\", city!=\"\"}))",
+          "legendFormat": "Cities",
+          "instant": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 33,
+      "title": "Distinct Forms",
+      "description": "Physical forms available (Coin, Bar, Biscuit, Tola Bar, etc.)",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 34 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "orange", "value": null }] },
+          "unit": "short",
+          "decimals": 0
+        }
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "textMode": "auto",
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "expr": "count(count by (form) (dealer_script_taxonomy{dealer=~\"$dealer\", form!=\"\"}))",
+          "legendFormat": "Forms",
+          "instant": true,
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 34,
+      "title": "Script Taxonomy \u2014 $dealer",
+      "description": "Full script catalogue for the selected dealer with taxonomy classification",
+      "type": "table",
+      "gridPos": { "h": 14, "w": 24, "x": 0, "y": 38 },
+      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "left",
+            "displayMode": "auto",
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Script Name" },
+            "properties": [
+              { "id": "custom.width", "value": 220 }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Commodity" },
+            "properties": [
+              { "id": "custom.width", "value": 100 },
+              { "id": "custom.displayMode", "value": "color-background-solid" },
+              { "id": "mappings", "value": [
+                { "type": "value", "options": {
+                  "Gold":     { "color": "yellow" },
+                  "Silver":   { "color": "light-blue" },
+                  "Platinum": { "color": "purple" },
+                  "Copper":   { "color": "orange" }
+                }}
+              ]}
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Purity" },
+            "properties": [{ "id": "custom.width", "value": 70 }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Weight" },
+            "properties": [{ "id": "custom.width", "value": 80 }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "City" },
+            "properties": [{ "id": "custom.width", "value": 110 }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Form" },
+            "properties": [{ "id": "custom.width", "value": 100 }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Delivery" },
+            "properties": [{ "id": "custom.width", "value": 90 }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "GST" },
+            "properties": [
+              { "id": "custom.width", "value": 90 },
+              { "id": "custom.displayMode", "value": "color-background-solid" },
+              { "id": "mappings", "value": [
+                { "type": "value", "options": {
+                  "incl-GST": { "color": "green" },
+                  "ex-GST":   { "color": "orange" }
+                }}
+              ]}
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Time" },
+            "properties": [{ "id": "custom.hidden", "value": true }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Value" },
+            "properties": [{ "id": "custom.hidden", "value": true }]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "sortBy": [{ "displayName": "Commodity", "desc": false }],
+        "footer": { "show": false }
+      },
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "renameByName": {
+              "script_name": "Script Name",
+              "commodity": "Commodity",
+              "purity": "Purity",
+              "weight": "Weight",
+              "city": "City",
+              "form": "Form",
+              "delivery": "Delivery",
+              "gst": "GST"
+            },
+            "excludeByName": {
+              "Time": true,
+              "Value": true,
+              "dealer": true,
+              "__name__": true
+            }
+          }
+        }
+      ],
+      "targets": [
+        {
+          "expr": "dealer_script_taxonomy{dealer=~\"$dealer\"}",
+          "legendFormat": "{{script_name}}",
+          "instant": true,
+          "format": "table",
+          "refId": "A"
+        }
+      ]
+    }
+  ],
+  "refresh": "1m",
+  "schemaVersion": 39,
+  "tags": ["dealer-intelligence", "business-intelligence", "taxonomy"],
+  "templating": {
+    "list": [
+      {
+        "name": "dealer",
+        "label": "Dealer",
+        "description": "Select a dealer to drill down into their script catalogue",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+        "query": {
+          "query": "label_values(dealer_info, dealer)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 2,
+        "sort": 1,
+        "multi": false,
+        "includeAll": false,
+        "current": {},
+        "hide": 0,
+        "options": []
+      }
+    ]
+  },
+  "time": { "from": "now-6h", "to": "now" },
+  "timepicker": {},
+  "timezone": "Asia/Kolkata",
+  "title": "SpotCompare \u2014 Dealer Intelligence",
+  "uid": "dealer-intelligence",
+  "version": 1
+}

@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: comp-intel-staging
+data:
+  ENVIRONMENT: "staging"
+  LOG_LEVEL: "info"
+  DEBUG: "false"
+  DEV_OTP_BYPASS: "true"
+  REDIS_URL: "redis://redis:6379"
+  DATABASE_URL: "postgresql://postgres:$(POSTGRES_PASSWORD)@pgbouncer:6432/bullion_intel_staging"
+  DEPLOY_MODE: "api"
+  RATE_LIMIT_API: "100"
+  RATE_LIMIT_WS: "60"
+  SCRAPER_TIMEOUT: "30"
+  SCRAPER_RETRY_COUNT: "3"
+  SCRAPER_RATE_LIMIT: "1"
+  MEILISEARCH_URL: "http://meilisearch.comp-intel.svc.cluster.local:7700"
+  NEWS_POLL_INTERVAL: "300"
+  RAZORPAY_PLAN_ID_MONTHLY: "plan_SR2bvQ9tYas6qL"
+  RAZORPAY_PLAN_ID_ANNUAL: "plan_SR2c1sO49ReYYy"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pgbouncer-config
+  namespace: comp-intel-staging
+data:
+  pgbouncer.ini: |
+    [databases]
+    bullion_intel_staging = host=postgres port=5432 dbname=bullion_intel_staging
+
+    [pgbouncer]
+    listen_addr = 0.0.0.0
+    listen_port = 6432
+    auth_type = scram-sha-256
+    auth_file = /etc/pgbouncer/userlist.txt
+    pool_mode = transaction
+    max_client_conn = 50
+    default_pool_size = 10
+    min_pool_size = 2
+    reserve_pool_size = 3
+    reserve_pool_timeout = 3
+    server_lifetime = 3600
+    server_idle_timeout = 600
+    log_connections = 0
+    log_disconnections = 0
+    log_pooler_errors = 1
+    stats_period = 60
+    admin_users = postgres
+  userlist.txt: |
+    "postgres" "SCRAM-SHA-256$4096:7wr4XjeUpXExPGiegTWKXA==$YX4sIOwiCW2TFv/A1IChJRzXiiehoKG74Rms9HYjbUI=:+8GDnDbHEdyR6ZB62gLmeZC5nQNEWOc06yzs7RYrais="

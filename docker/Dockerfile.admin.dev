@@ -1,0 +1,28 @@
+FROM node:18-alpine
+
+WORKDIR /monorepo
+
+# Install development dependencies
+RUN apk add --no-cache git
+
+# Copy workspace config + ALL workspace package.json files
+# npm ci needs the full workspace graph to resolve the lockfile
+COPY package.json package-lock.json ./
+COPY packages/shared/package.json packages/shared/
+COPY admin/package.json admin/
+COPY frontend/package.json frontend/
+
+# Install all dependencies including dev dependencies
+RUN npm ci
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nextjs -u 1001 && \
+    chown -R nextjs:nodejs /monorepo
+
+USER nextjs
+
+# Vite dev server runs on port 3334
+EXPOSE 3334
+
+# Command will be specified in docker-compose

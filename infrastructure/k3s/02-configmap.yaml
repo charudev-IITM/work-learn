@@ -1,0 +1,213 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: comp-intel
+data:
+  ENVIRONMENT: "production"
+  LOG_LEVEL: "info"
+  DEBUG: "false"
+  REDIS_URL: "redis://redis:6379"
+  DATABASE_URL: "postgresql://postgres:$(POSTGRES_PASSWORD)@pgbouncer:6432/bullion_intel"
+  DEPLOY_MODE: "api"
+  RATE_LIMIT_API: "100"
+  RATE_LIMIT_WS: "60"
+  SCRAPER_TIMEOUT: "30"
+  SCRAPER_RETRY_COUNT: "3"
+  SCRAPER_RATE_LIMIT: "1"
+  MEILISEARCH_URL: "http://meilisearch:7700"
+  NEWS_POLL_INTERVAL: "300"
+  RAZORPAY_PLAN_ID_MONTHLY: "plan_SR2XZQtXiwiFqa"
+  RAZORPAY_PLAN_ID_ANNUAL: "plan_SR2Xfvu7zaWf2d"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-config
+  namespace: comp-intel
+data:
+  postgresql.conf: |
+    listen_addresses = '*'
+    max_connections = 100
+    shared_buffers = 512MB
+    effective_cache_size = 1536MB
+    maintenance_work_mem = 128MB
+    checkpoint_completion_target = 0.9
+    wal_buffers = 16MB
+    default_statistics_target = 100
+    random_page_cost = 1.1
+    effective_io_concurrency = 200
+    work_mem = 4MB
+    min_wal_size = 1GB
+    max_wal_size = 4GB
+    max_worker_processes = 2
+    max_parallel_workers_per_gather = 1
+    max_parallel_workers = 2
+    log_timezone = 'Asia/Kolkata'
+    timezone = 'Asia/Kolkata'
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-config
+  namespace: comp-intel
+data:
+  redis.conf: |
+    bind 0.0.0.0
+    port 6379
+    timeout 300
+    tcp-keepalive 300
+    daemonize no
+    supervised no
+    loglevel notice
+    databases 16
+    save 900 1
+    save 300 10
+    save 60 10000
+    rdbcompression yes
+    rdbchecksum yes
+    dbfilename dump.rdb
+    dir /data
+    maxmemory 400mb
+    maxmemory-policy allkeys-lru
+    appendonly yes
+    appendfilename "appendonly.aof"
+    appendfsync everysec
+    user default on nopass ~* &* +@all
+    user staging on >staging_readonly_2024 ~* &* +@read +@pubsub -publish +@connection
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pgbouncer-config
+  namespace: comp-intel
+data:
+  pgbouncer.ini: |
+    [databases]
+    bullion_intel = host=postgres port=5432 dbname=bullion_intel
+
+    [pgbouncer]
+    listen_addr = 0.0.0.0
+    listen_port = 6432
+    auth_type = scram-sha-256
+    auth_file = /etc/pgbouncer/userlist.txt
+    pool_mode = transaction
+    max_client_conn = 200
+    default_pool_size = 20
+    min_pool_size = 5
+    reserve_pool_size = 5
+    reserve_pool_timeout = 3
+    server_lifetime = 3600
+    server_idle_timeout = 600
+    log_connections = 0
+    log_disconnections = 0
+    log_pooler_errors = 1
+    stats_period = 60
+    admin_users = postgres
+  userlist.txt: |
+    "postgres" "REPLACE_WITH_SCRAM_HASH"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init
+  namespace: comp-intel
+data:
+  init.sql: |
+    CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+    CREATE TABLE IF NOT EXISTS competitors (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        name VARCHAR(100) NOT NULL UNIQUE,
+        base_url VARCHAR(500) NOT NULL,
+        scraper_type VARCHAR(50) NOT NULL,
+        is_active BOOLEAN DEFAULT true,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS scripts (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        competitor_id UUID NOT NULL REFERENCES competitors(id) ON DELETE CASCADE,
+        name VARCHAR(200) NOT NULL,
+        symbol VARCHAR(100) NOT NULL,
+        category VARCHAR(50) DEFAULT 'gold',
+        is_active BOOLEAN DEFAULT true,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        UNIQUE(competitor_id, symbol)
+    );
+
+    CREATE TABLE IF NOT EXISTS rates (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        script_id UUID NOT NULL REFERENCES scripts(id) ON DELETE CASCADE,
+        timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
+        buy_rate DECIMAL(10,2),
+        sell_rate DECIMAL(10,2),
+        high_rate DECIMAL(10,2),
+        low_rate DECIMAL(10,2),
+        volume BIGINT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS users (
+        id VARCHAR PRIMARY KEY,
+        username VARCHAR(50) NOT NULL UNIQUE,
+        password_hash VARCHAR(255) NOT NULL,
+        email VARCHAR(255),
+        is_active BOOLEAN DEFAULT true,
+        is_admin BOOLEAN DEFAULT false,
+        last_login TIMESTAMP,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+    );
+
+    CREATE TABLE IF NOT EXISTS user_dashboards (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        user_id VARCHAR NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        name VARCHAR(100) NOT NULL,
+        config JSONB NOT NULL,
+        is_default BOOLEAN DEFAULT false,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_rates_script_timestamp ON rates(script_id, timestamp DESC);
+    CREATE INDEX IF NOT EXISTS idx_rates_timestamp ON rates(timestamp DESC);
+    CREATE INDEX IF NOT EXISTS idx_scripts_competitor ON scripts(competitor_id);
+    CREATE INDEX IF NOT EXISTS idx_user_dashboards_user ON user_dashboards(user_id);
+
+    INSERT INTO competitors (name, base_url, scraper_type) VALUES
+        ('kjbullion', 'https://kjbullion.com/', 'api'),
+        ('arihantspot', 'https://www.arihantspot.in/', 'api'),
+        ('dpgold', 'https://dpgold.com/', 'api'),
+        ('slnbullion', 'https://slnbullion.com/', 'api'),
+        ('amsbullion', 'https://amsbullion.com/', 'api'),
+        ('suswanibullion', 'http://www.suswanibullion.com/', 'api'),
+        ('smsbullion', 'https://www.smsbullion.com/', 'api'),
+        ('ashtasiddhi', 'https://ashtasiddhi.co.in/', 'api'),
+        ('rakshabullion', 'https://rakshabullion.com/', 'api'),
+        ('shivsahai', 'http://www.shivsahai.com/', 'api'),
+        ('csvbullion', 'https://csvbullion.com/', 'websocket')
+    ON CONFLICT (name) DO NOTHING;
+
+    CREATE OR REPLACE FUNCTION update_updated_at_column()
+    RETURNS TRIGGER AS $$
+    BEGIN
+        NEW.updated_at = NOW();
+        RETURN NEW;
+    END;
+    $$ language 'plpgsql';
+
+    DO $$ BEGIN
+      CREATE TRIGGER update_competitors_updated_at BEFORE UPDATE ON competitors FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+    EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    DO $$ BEGIN
+      CREATE TRIGGER update_scripts_updated_at BEFORE UPDATE ON scripts FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+    EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    DO $$ BEGIN
+      CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+    EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    DO $$ BEGIN
+      CREATE TRIGGER update_user_dashboards_updated_at BEFORE UPDATE ON user_dashboards FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+    EXCEPTION WHEN duplicate_object THEN NULL; END $$;
